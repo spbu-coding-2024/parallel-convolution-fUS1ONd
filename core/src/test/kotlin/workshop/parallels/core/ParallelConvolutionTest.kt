@@ -33,7 +33,8 @@ class ParallelConvolutionTest :
         "[PER_PIXEL] картинка 1x1 с 4 потоками" {
             val img = Image(1, 1, intArrayOf(128))
             convolveParallel(img, identity3, ParallelStrategy.PER_PIXEL, threads = 4)
-                .pixels.toList() shouldBe listOf(128)
+                .pixels
+                .toList() shouldBe listOf(128)
         }
 
         // GRID: блок больше картинки — должна остаться одна задача
