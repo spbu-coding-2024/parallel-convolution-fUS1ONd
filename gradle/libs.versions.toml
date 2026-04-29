@@ -5,6 +5,8 @@ kotest = "5.9.1"
 spotless = "6.25.0"
 ktlint = "1.3.1"
 kotlinx-cli = "0.3.6"
+jmh = "1.37"
+jmh-plugin = "0.7.2"
 
 [libraries]
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
@@ -12,7 +14,10 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 kotlinx-cli = { module = "org.jetbrains.kotlinx:kotlinx-cli", version.ref = "kotlinx-cli" }
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+jmh = { id = "me.champeau.jmh", version.ref = "jmh-plugin" }

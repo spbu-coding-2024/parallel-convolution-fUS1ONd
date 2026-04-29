@@ -3,6 +3,7 @@ plugins {
     // в корне не активируем — указываем `apply false`.
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.spotless)
+    alias(libs.plugins.jmh) apply false
 }
 
 // Репозитории для корня нужны Spotless: он скачивает ktlint в configuration
