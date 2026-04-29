@@ -10,6 +10,12 @@ dependencies {
 }
 
 jmh {
+    // Фильтрация бенчмарков по имени класса через -Pjmh.include=<regex>.
+    // Пример: ./gradlew :benchmarks:jmh -Pjmh.include=ParallelConvolutionBench
+    val includeFilter = project.findProperty("jmh.include") as String?
+    if (includeFilter != null) {
+        includes = listOf(includeFilter)
+    }
     resultFormat = "JSON"
     resultsFile = project.file("${project.layout.buildDirectory.get()}/results/jmh/results.json")
     fork = 1
