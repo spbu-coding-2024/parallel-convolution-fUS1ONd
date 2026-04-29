@@ -1,0 +1,15 @@
+root = true
+
+[*.{kt,kts}]
+# ktlint: позволять компактные многоэлементные литералы (DoubleArray ядра).
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+max_line_length = 140
+
+# Не разносить параметры функций по строкам автоматически.
+ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = unset
+ktlint_function_signature_body_expression_wrapping = default
+
+# Не ломать переносы внутри литералов массивов и аргументов.
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_parameter-list-wrapping = disabled

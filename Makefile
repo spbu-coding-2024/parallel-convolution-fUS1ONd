@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help build test fmt lint bench plots clean task1 task2 task3
+.PHONY: help build test fmt bench plots clean task1 task2 task3
 
 help:
 	@echo "Доступные команды:"
@@ -14,10 +14,10 @@ help:
 	@echo "  make task2    — запустить задачу 2 (ARGS=\"...\")"
 	@echo "  make task3    — запустить задачу 3 (ARGS=\"...\")"
 
-build:
+build: fmt
 	./gradlew build -x test
 
-test:
+test: fmt
 	./gradlew test
 
 fmt:
