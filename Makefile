@@ -1,18 +1,24 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help build test fmt bench plots clean task1 task2 task3
+TASK ?= all
+
+.PHONY: help build test fmt bench _do_bench plots clean task1 task2 task3
 
 help:
 	@echo "Доступные команды:"
-	@echo "  make build    — собрать проект"
-	@echo "  make test     — прогнать тесты"
-	@echo "  make fmt      — отформатировать код (Spotless + ktlint)"
-	@echo "  make bench    — запустить JMH-бенчмарки"
-	@echo "  make plots    — сгенерить графики из результатов JMH"
-	@echo "  make clean    — удалить артефакты сборки"
-	@echo "  make task1    — запустить задачу 1 (ARGS=\"...\")"
-	@echo "  make task2    — запустить задачу 2 (ARGS=\"...\")"
-	@echo "  make task3    — запустить задачу 3 (ARGS=\"...\")"
+	@echo "  make build          — собрать проект"
+	@echo "  make test           — прогнать тесты"
+	@echo "  make fmt            — отформатировать код (Spotless + ktlint)"
+	@echo "  make bench          — запустить все JMH-бенчмарки"
+	@echo "  make bench TASK=1   — только бенчмарки задачи 1"
+	@echo "  make bench TASK=2   — только бенчмарки задачи 2"
+	@echo "  make plots          — сгенерить все графики из результатов JMH"
+	@echo "  make plots TASK=1   — только графики задачи 1"
+	@echo "  make plots TASK=2   — только графики задачи 2"
+	@echo "  make clean          — удалить артефакты сборки"
+	@echo "  make task1          — запустить задачу 1 (ARGS=\"...\")"
+	@echo "  make task2          — запустить задачу 2 (ARGS=\"...\")"
+	@echo "  make task3          — запустить задачу 3 (ARGS=\"...\")"
 
 build: fmt
 	./gradlew build -x test
@@ -28,16 +34,25 @@ bench:
 		printf "Результаты уже есть. Перезапустить бенчмарки? [y/N] "; \
 		read ans; \
 		if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-			./gradlew :benchmarks:jmh --rerun; \
+			$(MAKE) _do_bench TASK=$(TASK); \
 		else \
 			echo "Используются существующие результаты."; \
 		fi \
 	else \
-		./gradlew :benchmarks:jmh; \
+		$(MAKE) _do_bench TASK=$(TASK); \
 	fi
 
+_do_bench:
+ifeq ($(TASK),1)
+	./gradlew :benchmarks:jmh -Pjmh.include=ConvolutionBench --rerun
+else ifeq ($(TASK),2)
+	./gradlew :benchmarks:jmh -Pjmh.include=ParallelConvolutionBench --rerun
+else
+	./gradlew :benchmarks:jmh --rerun
+endif
+
 plots:
-	.venv/bin/python scripts/plot.py
+	.venv/bin/python scripts/plot.py --task=$(TASK)
 
 clean:
 	./gradlew clean
