@@ -8,7 +8,14 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-RESULTS_PATH = pathlib.Path("benchmarks/build/results/jmh/results.json")
+RESULTS_DIR = pathlib.Path("benchmarks/build/results/jmh")
+# Раздельные файлы по задачам позволяют переиспользовать результаты между запусками.
+# results.json — fallback на старый формат (TASK=all писал всё в один файл).
+RESULTS_FILES = [
+    RESULTS_DIR / "results-task1.json",
+    RESULTS_DIR / "results-task2.json",
+    RESULTS_DIR / "results.json",
+]
 PLOTS_DIR = pathlib.Path("docs/plots")
 
 # Реальные размеры картинок в пикселях (сторона квадрата).
@@ -40,13 +47,19 @@ STRATEGY_LABELS = {
 }
 
 
-def load_results(path: pathlib.Path) -> list[dict]:
-    if not path.exists():
-        print(f"Файл результатов не найден: {path}", file=sys.stderr)
+def load_results(paths: list[pathlib.Path]) -> list[dict]:
+    """Читает все существующие result-файлы и склеивает их в один список."""
+    merged: list[dict] = []
+    for path in paths:
+        if not path.exists():
+            continue
+        with path.open(encoding="utf-8") as f:
+            merged.extend(json.load(f))
+    if not merged:
+        print(f"Не найдено ни одного файла результатов в {RESULTS_DIR}.", file=sys.stderr)
         print("Запустите 'make bench' перед 'make plots'.", file=sys.stderr)
         sys.exit(1)
-    with path.open(encoding="utf-8") as f:
-        return json.load(f)
+    return merged
 
 
 def extract_bench(results: list[dict], method_suffix: str) -> list[dict]:
@@ -260,6 +273,12 @@ def plot_parallel_image_size(results: list[dict]) -> None:
             linestyle="--",
             label="sequential",
         )
+    else:
+        print(
+            "Предупреждение: нет sequential baseline (benchImageSize) — "
+            "график рисуется без линии sequential. Запустите 'make bench TASK=1'.",
+            file=sys.stderr,
+        )
 
     ax.set_xlabel("Размер изображения (сторона, px)", fontsize=12)
     ax.set_ylabel("Среднее время, мс", fontsize=12)
@@ -285,7 +304,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    results = load_results(RESULTS_PATH)
+    results = load_results(RESULTS_FILES)
 
     if args.task in ("1", "all"):
         plot_image_size(results)

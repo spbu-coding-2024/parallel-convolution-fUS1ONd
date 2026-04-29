@@ -17,7 +17,10 @@ jmh {
         includes = listOf(includeFilter)
     }
     resultFormat = "JSON"
-    resultsFile = project.file("${project.layout.buildDirectory.get()}/results/jmh/results.json")
+    // Имя файла результатов параметризуется через -Pjmh.rff=<name>.json,
+    // чтобы Makefile мог писать TASK=1 и TASK=2 в разные файлы и переиспользовать их.
+    val rff = project.findProperty("jmh.rff") as String? ?: "results.json"
+    resultsFile = project.file("${project.layout.buildDirectory.get()}/results/jmh/$rff")
     fork = 1
     warmupIterations = 3
     iterations = 5
