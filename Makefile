@@ -44,9 +44,9 @@ bench:
 
 _do_bench:
 ifeq ($(TASK),1)
-	./gradlew :benchmarks:jmh -Pjmh.include=ConvolutionBench --rerun
+	./gradlew :benchmarks:jmh "-Pjmh.include=^workshop\\.parallels\\.benchmarks\\.ConvolutionBench\\." --rerun
 else ifeq ($(TASK),2)
-	./gradlew :benchmarks:jmh -Pjmh.include=ParallelConvolutionBench --rerun
+	./gradlew :benchmarks:jmh "-Pjmh.include=^workshop\\.parallels\\.benchmarks\\.ParallelConvolutionBench\\." --rerun
 else
 	./gradlew :benchmarks:jmh --rerun
 endif

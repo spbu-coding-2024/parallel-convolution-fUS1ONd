@@ -56,6 +56,9 @@ open class ParallelConvolutionBench {
 
     // --- Бенчмарк 2: масштабируемость по числу потоков (BY_ROWS) ---
     // img4 (1024x1024), gaussian 3x3, потоки варьируются.
+    // Внимание: создание и завершение ExecutorService входит в каждое измерение,
+    // поэтому результаты отражают полную стоимость вызова convolveParallel,
+    // а не только вычислительное ядро свёртки.
 
     @State(Scope.Benchmark)
     open class ThreadCountState {

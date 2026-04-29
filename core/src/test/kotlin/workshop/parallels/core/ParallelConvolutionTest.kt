@@ -29,12 +29,14 @@ class ParallelConvolutionTest :
             }
         }
 
-        // Граничный случай: картинка 1x1 не падает
-        "[PER_PIXEL] картинка 1x1 с 4 потоками" {
-            val img = Image(1, 1, intArrayOf(128))
-            convolveParallel(img, identity3, ParallelStrategy.PER_PIXEL, threads = 4)
-                .pixels
-                .toList() shouldBe listOf(128)
+        // Граничный случай: картинка 1x1 с threads > pixels — все стратегии не падают
+        for (strategy in ParallelStrategy.entries) {
+            "[${strategy.name}] картинка 1x1 с 4 потоками" {
+                val img = Image(1, 1, intArrayOf(128))
+                convolveParallel(img, identity3, strategy, threads = 4)
+                    .pixels
+                    .toList() shouldBe listOf(128)
+            }
         }
 
         // GRID: блок больше картинки — должна остаться одна задача
