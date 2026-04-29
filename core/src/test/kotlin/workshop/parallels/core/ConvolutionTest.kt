@@ -106,7 +106,7 @@ class ConvolutionTest :
     })
 
 // Генератор случайных картинок небольшого размера (для скорости тестов).
-private val randomImageArb =
+internal val randomImageArb =
     arbitrary { rs ->
         val width = Arb.int(2..16).bind()
         val height = Arb.int(2..16).bind()
