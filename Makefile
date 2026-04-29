@@ -24,7 +24,17 @@ fmt:
 	./gradlew spotlessApply
 
 bench:
-	./gradlew :benchmarks:jmh
+	@if [ -f benchmarks/build/results/jmh/results.json ]; then \
+		printf "Результаты уже есть. Перезапустить бенчмарки? [y/N] "; \
+		read ans; \
+		if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
+			./gradlew :benchmarks:jmh --rerun; \
+		else \
+			echo "Используются существующие результаты."; \
+		fi \
+	else \
+		./gradlew :benchmarks:jmh; \
+	fi
 
 plots:
 	.venv/bin/python scripts/plot.py

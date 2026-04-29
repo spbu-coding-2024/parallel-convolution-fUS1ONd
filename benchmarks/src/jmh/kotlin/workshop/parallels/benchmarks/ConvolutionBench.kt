@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit
 @Measurement(iterations = 5)
 @Fork(1)
 open class ConvolutionBench {
-
     // --- Бенчмарк 1: время свёртки vs размер изображения ---
     // Ядро фиксировано (gaussian 3×3), картинки варьируются.
 
@@ -41,7 +40,8 @@ open class ConvolutionBench {
         // Картинка загружается один раз на Trial — IO не входит в измерение.
         @Setup(Level.Trial)
         fun setup() {
-            image = ImageIO.load(Paths.get("samples/$imageName.jpg"))
+            val samplesDir = System.getProperty("benchmarks.samplesDir", "samples")
+            image = ImageIO.load(Paths.get("$samplesDir/$imageName.jpg"))
         }
     }
 
@@ -61,7 +61,8 @@ open class ConvolutionBench {
 
         @Setup(Level.Trial)
         fun setup() {
-            image = ImageIO.load(Paths.get("samples/img3.jpg"))
+            val samplesDir = System.getProperty("benchmarks.samplesDir", "samples")
+            image = ImageIO.load(Paths.get("$samplesDir/img4.jpg"))
             kernel = Kernels.byName.getValue(kernelName)
         }
     }

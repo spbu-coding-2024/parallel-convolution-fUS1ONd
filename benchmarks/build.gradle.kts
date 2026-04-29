@@ -12,8 +12,10 @@ dependencies {
 jmh {
     resultFormat = "JSON"
     resultsFile = project.file("${project.layout.buildDirectory.get()}/results/jmh/results.json")
-    includes = listOf(".*ConvolutionBench.*")
     fork = 1
     warmupIterations = 3
     iterations = 5
+    // Абсолютный путь к samples/ передаётся в форкнутый JVM явно,
+    // т.к. рабочая директория форка не совпадает с корнем проекта.
+    jvmArgs = listOf("-Dbenchmarks.samplesDir=${rootProject.projectDir}/samples")
 }
