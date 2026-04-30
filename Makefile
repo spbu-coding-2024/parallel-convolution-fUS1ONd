@@ -45,7 +45,7 @@ fmt:
 	./gradlew spotlessApply
 
 bench:
-	@have_all=1; for f in $(RESULTS_FILE); do [ -f "$$f" ] || have_all=0; done; \
+	@have_all=1; for f in $(RESULTS_FILE); do [ -s "$$f" ] || have_all=0; done; \
 	if [ $$have_all -eq 1 ]; then \
 		printf "Результаты уже есть ($(RESULTS_FILE)). Перезапустить бенчмарки? [y/N] "; \
 		read ans; \
