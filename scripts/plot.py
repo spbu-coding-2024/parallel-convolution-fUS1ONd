@@ -14,6 +14,7 @@ RESULTS_DIR = pathlib.Path("benchmarks/build/results/jmh")
 RESULTS_FILES = [
     RESULTS_DIR / "results-task1.json",
     RESULTS_DIR / "results-task2.json",
+    RESULTS_DIR / "results-task3.json",
     RESULTS_DIR / "results.json",
 ]
 PLOTS_DIR = pathlib.Path("docs/plots")
@@ -294,13 +295,140 @@ def plot_parallel_image_size(results: list[dict]) -> None:
     print(f"Сохранено: {out}")
 
 
+def plot_pipeline_workers(results: list[dict]) -> None:
+    """График task3: время pipeline vs число conv-воркеров (32 копии img4, cap=4)."""
+    data = extract_bench(results, "benchByConvWorkers")
+    if not data:
+        print("Нет данных для benchByConvWorkers, пропускаю.", file=sys.stderr)
+        return
+
+    points = sorted(
+        [(int(r["params"]["workers"]), r["primaryMetric"]["score"]) for r in data],
+        key=lambda p: p[0],
+    )
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(xs, ys, marker="o", linewidth=2, markersize=7, color="#42A5F5", label="pipeline (inner=none)")
+
+    for x, y in zip(xs, ys):
+        ax.annotate(
+            f"{y:.0f}",
+            xy=(x, y),
+            xytext=(0, 8),
+            textcoords="offset points",
+            ha="center",
+            fontsize=9,
+        )
+
+    ax.set_xlabel("Число conv-воркеров", fontsize=12)
+    ax.set_ylabel("Время обработки пачки, мс", fontsize=12)
+    ax.set_title("Pipeline: масштабируемость по conv-воркерам (32 × img4, gaussian)", fontsize=13)
+    ax.set_xticks(xs)
+    ax.set_ylim(0, max(ys) * 1.15)
+    ax.legend(fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.5)
+    fig.tight_layout()
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    out = PLOTS_DIR / "bench_pipeline_workers.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Сохранено: {out}")
+
+
+def plot_pipeline_queue_cap(results: list[dict]) -> None:
+    """График task3: время pipeline vs размер очереди (32 × img4, workers=4)."""
+    data = extract_bench(results, "benchByQueueCap")
+    if not data:
+        print("Нет данных для benchByQueueCap, пропускаю.", file=sys.stderr)
+        return
+
+    points = sorted(
+        [(int(r["params"]["cap"]), r["primaryMetric"]["score"]) for r in data],
+        key=lambda p: p[0],
+    )
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(xs, ys, marker="o", linewidth=2, markersize=7, color="#66BB6A", label="pipeline (workers=4)")
+
+    for x, y in zip(xs, ys):
+        ax.annotate(
+            f"{y:.0f}",
+            xy=(x, y),
+            xytext=(0, 8),
+            textcoords="offset points",
+            ha="center",
+            fontsize=9,
+        )
+
+    ax.set_xlabel("Размер очереди (queueCap)", fontsize=12)
+    ax.set_ylabel("Время обработки пачки, мс", fontsize=12)
+    ax.set_title("Pipeline: влияние размера очереди (32 × img4, gaussian)", fontsize=13)
+    ax.set_xticks(xs)
+    ax.set_ylim(0, max(ys) * 1.15)
+    ax.legend(fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.5)
+    fig.tight_layout()
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    out = PLOTS_DIR / "bench_pipeline_queue_cap.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Сохранено: {out}")
+
+
+def plot_pipeline_inner(results: list[dict]) -> None:
+    """График task3: inner=none vs inner=BY_ROWS (8 × img5, workers=2)."""
+    data = extract_bench(results, "benchInnerStrategy")
+    if not data:
+        print("Нет данных для benchInnerStrategy, пропускаю.", file=sys.stderr)
+        return
+
+    scores = {r["params"]["inner"]: r["primaryMetric"]["score"] for r in data}
+    inner_order = ["NONE", "BY_ROWS"]
+    inner_labels = {"NONE": "inner=none", "BY_ROWS": "inner=by-rows"}
+    labels = [inner_labels[k] for k in inner_order if k in scores]
+    values = [scores[k] for k in inner_order if k in scores]
+
+    colors = ["#90A4AE", "#42A5F5"]
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = ax.bar(labels, values, color=colors[: len(values)], width=0.5, edgecolor="white")
+
+    for bar, val in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(values) * 0.01,
+            f"{val:.0f} мс",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
+
+    ax.set_xlabel("Внутренний параллелизм свёртки", fontsize=12)
+    ax.set_ylabel("Время обработки пачки, мс", fontsize=12)
+    ax.set_title("Pipeline: внутренний параллелизм (8 × img5, workers=2, gaussian)", fontsize=13)
+    ax.set_ylim(0, max(values) * 1.15)
+    ax.grid(True, axis="y", linestyle="--", alpha=0.5)
+    fig.tight_layout()
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    out = PLOTS_DIR / "bench_pipeline_inner.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Сохранено: {out}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Генерация графиков из JMH-результатов.")
     parser.add_argument(
         "--task",
-        choices=["1", "2", "all"],
+        choices=["1", "2", "3", "all"],
         default="all",
-        help="Какие графики генерировать: 1, 2 или all (по умолчанию all)",
+        help="Какие графики генерировать: 1, 2, 3 или all (по умолчанию all)",
     )
     args = parser.parse_args()
 
@@ -314,6 +442,11 @@ def main() -> None:
         plot_parallel_strategies(results)
         plot_parallel_thread_scaling(results)
         plot_parallel_image_size(results)
+
+    if args.task in ("3", "all"):
+        plot_pipeline_workers(results)
+        plot_pipeline_queue_cap(results)
+        plot_pipeline_inner(results)
 
 
 if __name__ == "__main__":
