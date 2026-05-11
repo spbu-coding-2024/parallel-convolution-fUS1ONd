@@ -1,9 +1,11 @@
 package workshop.parallels.core
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.property.checkAll
 import io.kotest.property.forAll
+import java.util.concurrent.atomic.AtomicInteger
 
 class PipelineTest :
     StringSpec({
@@ -31,6 +33,35 @@ class PipelineTest :
 
         "pipeline на пустом списке возвращает пустой список" {
             pipeline(emptyList(), gaussian) shouldBe emptyList()
+        }
+
+        "bounded queue: число картинок в полёте не превышает queueCap + convWorkers" {
+            val img = Image(32, 32, IntArray(32 * 32) { 100 })
+            val images = List(20) { img }
+            val queueCap = 2
+            val convWorkers = 2
+            val inFlight = AtomicInteger(0)
+            val maxInFlight = AtomicInteger(0)
+
+            pipeline(
+                images,
+                gaussian,
+                convWorkers = convWorkers,
+                queueCap = queueCap,
+                onAfterRead = {
+                    val current = inFlight.incrementAndGet()
+                    maxInFlight.updateAndGet { maxOf(it, current) }
+                },
+                onBeforeConv = {
+                    inFlight.decrementAndGet()
+                    // имитируем медленную свёртку — reader быстро упрётся в очередь
+                    Thread.sleep(20)
+                },
+            )
+
+            // reader инкрементит до put(), conv декрементит после take() в onBeforeConv —
+            // верхняя граница: queueCap + по одной у каждого воркера + одна у reader'а перед put().
+            maxInFlight.get() shouldBeLessThanOrEqual queueCap + convWorkers + 1
         }
 
         "pipeline с innerStrategy=BY_ROWS даёт тот же результат" {

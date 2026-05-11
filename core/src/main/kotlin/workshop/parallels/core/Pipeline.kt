@@ -11,6 +11,8 @@ fun pipeline(
     queueCap: Int = 4,
     innerStrategy: ParallelStrategy? = null,
     border: BorderStrategy = BorderStrategy.CLAMP,
+    onAfterRead: ((index: Int) -> Unit)? = null,
+    onBeforeConv: ((index: Int) -> Unit)? = null,
 ): List<Image> {
     if (images.isEmpty()) return emptyList()
     require(convWorkers >= 1) { "convWorkers must be >= 1" }
@@ -29,6 +31,7 @@ fun pipeline(
         val reader =
             readerPool.submit {
                 for ((i, img) in images.withIndex()) {
+                    onAfterRead?.invoke(i)
                     inputQueue.put(InputItem.Task(IndexedImage(i, img)))
                 }
                 // poison pills для каждого воркера
@@ -42,6 +45,7 @@ fun pipeline(
                         val item = inputQueue.take()
                         if (item is InputItem.Poison) break
                         val task = (item as InputItem.Task).value
+                        onBeforeConv?.invoke(task.index)
                         val out =
                             if (innerStrategy == null) {
                                 convolve(task.image, kernel, border)
