@@ -105,3 +105,6 @@ task2:
 
 task3:
 	./gradlew :task3:run --args="$(ARGS)"
+
+task4:
+	./gradlew :task4:run --args="$(ARGS)"
