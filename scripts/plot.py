@@ -15,6 +15,7 @@ RESULTS_FILES = [
     RESULTS_DIR / "results-task1.json",
     RESULTS_DIR / "results-task2.json",
     RESULTS_DIR / "results-task3.json",
+    RESULTS_DIR / "results-task4.json",
     RESULTS_DIR / "results.json",
 ]
 PLOTS_DIR = pathlib.Path("docs/plots")
@@ -422,13 +423,122 @@ def plot_pipeline_inner(results: list[dict]) -> None:
     print(f"Сохранено: {out}")
 
 
+def plot_gpu_by_image_size(results: list[dict]) -> None:
+    """График task4: GPU vs CPU vs CPU-parallel по размеру картинки (gaussian 3×3)."""
+    gpu = extract_bench(results, "benchGpuByImageSize")
+    cpu = extract_bench(results, "benchCpuByImageSize")
+    cpu_par = extract_bench(results, "benchCpuParallelByImageSize")
+    if not gpu:
+        print("Нет данных для benchGpuByImageSize, пропускаю.", file=sys.stderr)
+        return
+
+    def points(data: list[dict]) -> tuple[list[int], list[float]]:
+        pts = sorted(
+            [(IMAGE_SIZES[r["params"]["imageName"]], r["primaryMetric"]["score"]) for r in data],
+            key=lambda p: p[0],
+        )
+        return [p[0] for p in pts], [p[1] for p in pts]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    series = [
+        (gpu, "GPU (OpenCL)", "#42A5F5", "o", "-"),
+        (cpu_par, "CPU parallel (by-rows)", "#66BB6A", "s", "-"),
+        (cpu, "CPU sequential", "#EF5350", "^", "--"),
+    ]
+    for data, label, color, marker, ls in series:
+        if not data:
+            continue
+        xs, ys = points(data)
+        ax.plot(xs, ys, marker=marker, linewidth=2, markersize=7, color=color, linestyle=ls, label=label)
+        for x, y in zip(xs, ys):
+            ax.annotate(f"{y:.1f}", xy=(x, y), xytext=(0, 8), textcoords="offset points", ha="center", fontsize=8)
+
+    ax.set_xlabel("Размер изображения (сторона, px)", fontsize=12)
+    ax.set_ylabel("Среднее время, мс", fontsize=12)
+    ax.set_title("GPU vs CPU: время свёртки vs размер картинки (gaussian 3×3)", fontsize=13)
+    ax.set_yscale("log")
+    ax.legend(fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.5, which="both")
+    fig.tight_layout()
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    out = PLOTS_DIR / "bench_gpu_image_size.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Сохранено: {out}")
+
+
+def plot_gpu_by_kernel_size(results: list[dict]) -> None:
+    """График task4: GPU vs CPU vs CPU-parallel по размеру ядра (img4, 1024×1024)."""
+    gpu = extract_bench(results, "benchGpuByKernelSize")
+    cpu = extract_bench(results, "benchCpuByKernelSize")
+    cpu_par = extract_bench(results, "benchCpuParallelByKernelSize")
+    if not gpu:
+        print("Нет данных для benchGpuByKernelSize, пропускаю.", file=sys.stderr)
+        return
+
+    kernel_order = ["gaussian", "gaussian-5x5", "motion-blur"]
+    kernel_labels = {
+        "gaussian": "gaussian\n(3×3)",
+        "gaussian-5x5": "gaussian\n(5×5)",
+        "motion-blur": "motion-blur\n(9×9)",
+    }
+
+    def scores(data: list[dict]) -> dict[str, float]:
+        return {r["params"]["kernelName"]: r["primaryMetric"]["score"] for r in data}
+
+    gpu_s = scores(gpu)
+    cpu_s = scores(cpu) if cpu else {}
+    par_s = scores(cpu_par) if cpu_par else {}
+
+    labels = [kernel_labels[k] for k in kernel_order if k in gpu_s]
+    x = list(range(len(labels)))
+    width = 0.27
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    gpu_vals = [gpu_s[k] for k in kernel_order if k in gpu_s]
+    bars_gpu = ax.bar([i - width for i in x], gpu_vals, width, color="#42A5F5", label="GPU (OpenCL)", edgecolor="white")
+    bars_list = [bars_gpu]
+    if par_s:
+        par_vals = [par_s.get(k, 0) for k in kernel_order if k in gpu_s]
+        bars_par = ax.bar(x, par_vals, width, color="#66BB6A", label="CPU parallel (by-rows)", edgecolor="white")
+        bars_list.append(bars_par)
+    if cpu_s:
+        cpu_vals = [cpu_s.get(k, 0) for k in kernel_order if k in gpu_s]
+        bars_cpu = ax.bar([i + width for i in x], cpu_vals, width, color="#EF5350", label="CPU sequential", edgecolor="white")
+        bars_list.append(bars_cpu)
+
+    all_vals = [b.get_height() for bars in bars_list for b in bars]
+    ymax = max(all_vals) if all_vals else 1.0
+    for bars in bars_list:
+        for bar in bars:
+            v = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, v + ymax * 0.01, f"{v:.0f}", ha="center", va="bottom", fontsize=8)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_xlabel("Ядро свёртки", fontsize=12)
+    ax.set_ylabel("Среднее время, мс", fontsize=12)
+    ax.set_title("GPU vs CPU: время свёртки vs размер ядра (изображение 1024×1024)", fontsize=13)
+    ax.set_ylim(0, ymax * 1.18)
+    ax.legend(fontsize=10)
+    ax.grid(True, axis="y", linestyle="--", alpha=0.5)
+    fig.tight_layout()
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    out = PLOTS_DIR / "bench_gpu_kernel_size.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"Сохранено: {out}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Генерация графиков из JMH-результатов.")
     parser.add_argument(
         "--task",
-        choices=["1", "2", "3", "all"],
+        choices=["1", "2", "3", "4", "all"],
         default="all",
-        help="Какие графики генерировать: 1, 2, 3 или all (по умолчанию all)",
+        help="Какие графики генерировать: 1, 2, 3, 4 или all (по умолчанию all)",
     )
     args = parser.parse_args()
 
@@ -447,6 +557,10 @@ def main() -> None:
         plot_pipeline_workers(results)
         plot_pipeline_queue_cap(results)
         plot_pipeline_inner(results)
+
+    if args.task in ("4", "all"):
+        plot_gpu_by_image_size(results)
+        plot_gpu_by_kernel_size(results)
 
 
 if __name__ == "__main__":
