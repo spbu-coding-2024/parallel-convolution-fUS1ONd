@@ -8,4 +8,5 @@ rootProject.name = "workshop-parallels"
 include("core")
 include("task1")
 include("task2")
+include("task3")
 include("benchmarks")

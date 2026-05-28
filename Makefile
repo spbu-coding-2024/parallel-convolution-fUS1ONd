@@ -7,17 +7,20 @@ TASK ?= all
 RESULTS_DIR := benchmarks/build/results/jmh
 RESULTS_TASK1 := $(RESULTS_DIR)/results-task1.json
 RESULTS_TASK2 := $(RESULTS_DIR)/results-task2.json
+RESULTS_TASK3 := $(RESULTS_DIR)/results-task3.json
 
 ifeq ($(TASK),1)
     RESULTS_FILE := $(RESULTS_TASK1)
 else ifeq ($(TASK),2)
     RESULTS_FILE := $(RESULTS_TASK2)
+else ifeq ($(TASK),3)
+    RESULTS_FILE := $(RESULTS_TASK3)
 else
-    # Для TASK=all считаем «есть результаты», только если есть оба файла.
-    RESULTS_FILE := $(RESULTS_TASK1) $(RESULTS_TASK2)
+    # Для TASK=all считаем «есть результаты», только если есть все файлы.
+    RESULTS_FILE := $(RESULTS_TASK1) $(RESULTS_TASK2) $(RESULTS_TASK3)
 endif
 
-.PHONY: help build test fmt bench _do_bench _bench_task1 _bench_task2 plots clean task1 task2 task3
+.PHONY: help build test fmt bench _do_bench _bench_task1 _bench_task2 _bench_task3 plots clean task1 task2 task3
 
 help:
 	@echo "Доступные команды:"
@@ -27,9 +30,11 @@ help:
 	@echo "  make bench          — запустить все JMH-бенчмарки"
 	@echo "  make bench TASK=1   — только бенчмарки задачи 1"
 	@echo "  make bench TASK=2   — только бенчмарки задачи 2"
+	@echo "  make bench TASK=3   — только бенчмарки задачи 3"
 	@echo "  make plots          — сгенерить все графики из результатов JMH"
 	@echo "  make plots TASK=1   — только графики задачи 1"
 	@echo "  make plots TASK=2   — только графики задачи 2"
+	@echo "  make plots TASK=3   — только графики задачи 3"
 	@echo "  make clean          — удалить артефакты сборки"
 	@echo "  make task1          — запустить задачу 1 (ARGS=\"...\")"
 	@echo "  make task2          — запустить задачу 2 (ARGS=\"...\")"
@@ -63,9 +68,12 @@ ifeq ($(TASK),1)
 	$(MAKE) _bench_task1
 else ifeq ($(TASK),2)
 	$(MAKE) _bench_task2
+else ifeq ($(TASK),3)
+	$(MAKE) _bench_task3
 else
 	$(MAKE) _bench_task1
 	$(MAKE) _bench_task2
+	$(MAKE) _bench_task3
 endif
 
 _bench_task1:
@@ -77,6 +85,11 @@ _bench_task2:
 	./gradlew :benchmarks:jmh \
 		"-Pjmh.include=^workshop\\.parallels\\.benchmarks\\.ParallelConvolutionBench\\." \
 		"-Pjmh.rff=results-task2.json" --rerun
+
+_bench_task3:
+	./gradlew :benchmarks:jmh \
+		"-Pjmh.include=^workshop\\.parallels\\.benchmarks\\.PipelineBench\\." \
+		"-Pjmh.rff=results-task3.json" --rerun
 
 plots:
 	.venv/bin/python scripts/plot.py --task=$(TASK)
