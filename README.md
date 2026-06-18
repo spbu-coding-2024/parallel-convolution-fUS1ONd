@@ -9,6 +9,7 @@
 - ✅ **Задача 1.** Последовательная свёртка одного изображения.
 - ✅ **Задача 2.** Параллельная свёртка (стратегии разделения, cache locality).
 - ✅ **Задача 3.** Pipeline-обработка массива изображений (producer-consumer).
+- ✅ **Задача 4.** GPU-свёртка через OpenCL (JOCL).
 
 ## Стек
 
@@ -22,6 +23,7 @@
 | Spotless    | 6.25.0                                        |
 | ktlint      | 1.3.1                                         |
 | kotlinx-cli | 0.3.6                                         |
+| JOCL        | 2.0.6 (OpenCL-биндинги, только для задачи 4)  |
 | Python      | 3.10+ (для скриптов с графиками)              |
 
 Версии зафиксированы в [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
@@ -96,9 +98,10 @@ make task1
 | `make clean`             | удалить артефакты сборки                        |
 | `make task1 ARGS="..."`  | запустить задачу 1                              |
 | `make task2 ARGS="..."`  | запустить задачу 2                              |
-| `make task3 ARGS="..."`  | запустить задачу 3 (планируется)                |
-| `make bench [TASK=1\|2\|all]` | JMH-бенчмарки (по умолчанию `all`)         |
-| `make plots [TASK=1\|2\|all]` | графики из JMH JSON в `docs/plots/`        |
+| `make task3 ARGS="..."`  | запустить задачу 3                              |
+| `make task4 ARGS="..."`  | запустить задачу 4 (GPU; требует OpenCL)        |
+| `make bench [TASK=1\|2\|3\|4\|all]` | JMH-бенчмарки (по умолчанию `all`)   |
+| `make plots [TASK=1\|2\|3\|4\|all]` | графики из JMH JSON в `docs/plots/`  |
 
 ## Структура проекта
 
@@ -168,6 +171,26 @@ CLI-флаги:
 |      | `--block-width`  | `64`                                | ширина блока для `grid`                                   |
 |      | `--block-height` | `64`                                | высота блока для `grid`                                   |
 
+## Запуск задачи 4
+
+GPU-свёртка одной картинки через OpenCL. Требуется рабочий OpenCL-драйвер на машине. Подробности — [docs/task4.md](docs/task4.md#окружение-для-запуска).
+
+```bash
+# с дефолтами: gaussian на samples/img1.jpg → out/task4.png
+make task4
+
+# с параметрами
+make task4 ARGS="-i samples/img4.jpg -o out/gpu.png -k motion-blur"
+```
+
+CLI-флаги:
+
+| Флаг | Длинный    | Дефолт             | Описание                 |
+| ---- | ---------- | ------------------ | ------------------------ |
+| `-i` | `--input`  | `samples/img1.jpg` | путь к входной картинке  |
+| `-o` | `--output` | `out/task4.png`    | путь к выходной картинке |
+| `-k` | `--kernel` | `gaussian`         | имя ядра                 |
+
 ## Доступные фильтры
 
 | Имя              | Размер | Эффект                                          |
@@ -214,7 +237,8 @@ make test
 
 - [Задача 1 — последовательная свёртка](docs/task1.md)
 - [Задача 2 — параллельные стратегии](docs/task2.md)
-- [Задача 3 — pipeline](docs/task3.md) _(в работе)_
+- [Задача 3 — pipeline](docs/task3.md)
+- [Задача 4 — GPU-свёртка через OpenCL](docs/task4.md)
 
 ## Языковые соглашения
 
